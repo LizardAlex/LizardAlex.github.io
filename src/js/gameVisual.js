@@ -11,6 +11,7 @@ import Tween from './tweenjs';
 class gameVisual extends Container {
   constructor(width, height, scene) {
   	super();
+    Tween.MotionGuidePlugin.install();
     this.scene = scene;
   	this.widthPieces = width;
   	this.heightPieces = height;
@@ -108,18 +109,45 @@ class gameVisual extends Container {
     this.inMove = true;
     const tile1 = this.visualBoard[event.detail.fromRow][event.detail.fromCol];
     const tile2 = this.visualBoard[event.detail.toRow][event.detail.toCol];
+    tile1.row = event.detail.toRow;
+    tile1.col = event.detail.toCol;
+    tile2.row = event.detail.fromRow;
+    tile2.col = event.detail.fromCol;
     this.tilesCont.addChild(tile1);
     this.tilesCont.addChild(tile2);
     this.visualBoard[event.detail.toRow][event.detail.toCol] = tile1;
     this.visualBoard[event.detail.fromRow][event.detail.fromCol] = tile2;
-    Tween.get(tile1.position).to(this.setCoordinates(event.detail.toRow, event.detail.toCol), 100);
-    Tween.get(tile2.position).to(this.setCoordinates(event.detail.fromRow, event.detail.fromCol), 100).call(() => {
-      this.inMove = false;
-      this.scene.UI.moveMade();
-    });
+    const endC1 = this.setCoordinates(event.detail.toRow, event.detail.toCol);
+    const endC2 = this.setCoordinates(event.detail.fromRow, event.detail.fromCol);
+    const xOff = (event.detail.toCol - event.detail.fromCol) / (event.detail.toCol - event.detail.fromCol) || 0;
+    const yOff = (event.detail.toRow - event.detail.fromRow) / (event.detail.toRow - event.detail.fromRow) || 0;
+    Tween.get(tile1.position).to({guide:
+      { path:[
+        tile1.x,
+        tile1.y,
+        (tile1.x + endC1.x) / 2 - this.widthPieces * 15 * yOff,
+        (tile1.y + endC1.y) / 2 + this.heightPieces * 15 * xOff,
+        endC1.x,
+        endC1.y]
+      }}, 100);
+    Tween.get(tile2.position).to({guide:
+      { path:[
+        tile2.x,
+        tile2.y,
+        (tile2.x + endC2.x) / 2 + this.widthPieces * 15 * yOff,
+        (tile2.y + endC2.y) / 2 - this.heightPieces * 15 * xOff,
+        endC2.x,
+        endC2.y
+      ] }}, 100);
+
   }
   onTileDestroyed(event) {
-  	this.tilesCont.removeChild(this.visualBoard[event.detail.row][event.detail.col]);
+    const tile = this.visualBoard[event.detail.row][event.detail.col];
+    if (tile) {
+      Tween.get(tile.scale).to({ x: 0, y: 0 }, 100, Tween.Ease.sineInOut).call(() => {
+        this.tilesCont.removeChild(tile);
+      });
+    }
   	this.visualBoard[event.detail.row][event.detail.col] = null;
   }
 

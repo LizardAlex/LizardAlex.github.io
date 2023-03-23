@@ -3,34 +3,99 @@ import {
   Sprite,
   Text,
   filters,
+  Graphics,
 } from 'pixi.js';
 
 import game from './game';
 import GameVisual from './gameVisual';
+import Tween from './tweenjs';
 
 class UI extends Container {
   constructor(scene) {
   	super();
     this.scene = scene;
     this.spawnUIElements();
-    this.scene.on("onRotate", () => { this.onRotate() });
+    this.scene.on('onRotate', () => { this.onRotate() });
   }
   spawnUIElements() {
-    this.movesContainer = new Sprite(game.loadImage("moves"));
+    this.spawnTopBar();
+    this.spawnMoveCounter();
+    this.spawnBonusButtons();
+  }
+  spawnMoveCounter() {
+    this.movesContainer = new Sprite(game.loadImage('moves'));
     this.movesContainer.anchor.set(0.5);
     this.addChild(this.movesContainer);
 
-    this.topCounter = new Sprite(game.loadImage("topBar"));
+    const text = new Text('ОЧКИ:', {
+      fontFamily: 'Marvin',
+      fontSize: 32,
+      fill: 0xffffff,
+      align: 'center',
+    });
+    text.anchor.set(0.5);
+    text.y = 65;
+    this.movesContainer.addChild(text);
+
+    this.movesText = new Text(this.scene.gameVisual.logic.moves, {
+      fontFamily: 'Marvin',
+      fontSize: 112,
+      fill: 0xffffff,
+      align: 'center',
+    });
+    this.movesText.anchor.set(0.5);
+    this.movesText.y = -95;
+    this.movesContainer.addChild(this.movesText);
+
+    this.pointsText = new Text(0, {
+      fontFamily: 'Marvin',
+      fontSize: 82,
+      fill: 0xffffff,
+      align: 'center',
+    });
+    this.pointsText.value = 0;
+    this.pointsText.anchor.set(0.5);
+    this.pointsText.y = 115;
+    this.movesContainer.addChild(this.pointsText);
+  }
+  spawnTopBar() {
+    this.topCounter = new Sprite(game.loadImage('topBar'));
     this.addChild(this.topCounter);
     this.topCounter.anchor.set(0.5, 0);
 
+    const text = new Text('ПРОГРЕСС', {
+      fontFamily: 'Marvin',
+      fontSize: 35,
+      fill: 0xffffff,
+      align: 'center',
+    });
+    text.anchor.set(0.5);
+    text.y = 22;
+    this.topCounter.addChild(text);
+
+    this.line = new Sprite(game.loadImage('line'));
+    this.line.anchor.set(0.5);
+    this.topCounter.addChild(this.line);
+    this.line.y = 70;
+
+    this.lineProgress = new Sprite(game.loadImage('lineFilled'));
+    this.lineProgress.anchor.set(0.5);
+    this.line.addChild(this.lineProgress);
+
+    const mask = new Graphics();
+    mask.beginFill(0xffffff).drawRoundedRect(-this.lineProgress.width / 2, -this.lineProgress.height / 2, this.lineProgress.width, this.lineProgress.height, 27);
+    this.line.addChild(mask);
+    this.lineProgress.mask = mask;
+    this.lineProgress.x = -this.lineProgress.width;
+  }
+  spawnBonusButtons() {
     this.bwFilter = new filters.ColorMatrixFilter();
     this.bwFilter.desaturate();
 
-    this.bonus1 = new Sprite(game.loadImage("bonusButton"));
+    this.bonus1 = new Sprite(game.loadImage('bonusButton'));
     this.bonus1.anchor.set(.5);
     this.addChild(this.bonus1);
-    const bonus1Img = new Sprite(game.loadImage("booster7"));
+    const bonus1Img = new Sprite(game.loadImage('booster7'));
     bonus1Img.anchor.set(.5);
     bonus1Img.y = -30;
     this.bonus1.addChild(bonus1Img);
@@ -58,9 +123,9 @@ class UI extends Container {
     this.bonus1.addChild(this.bonus1AmountText);
 
 
-    this.bonus2 = new Sprite(game.loadImage("bonusButton"));
+    this.bonus2 = new Sprite(game.loadImage('bonusButton'));
     this.addChild(this.bonus2);
-    const bonus2Img = new Sprite(game.loadImage("swap"));
+    const bonus2Img = new Sprite(game.loadImage('swap'));
     bonus2Img.anchor.set(.5);
     bonus2Img.y = -30;
     this.bonus2.addChild(bonus2Img);
@@ -106,6 +171,15 @@ class UI extends Container {
     this.bonus2AmountText.text = this.scene.gameVisual.logic.swapsRemaining;
     if (this.scene.gameVisual.logic.bombsRemaining === 0) this.bonus1.filters = [this.bwFilter];
     if (this.scene.gameVisual.logic.swapsRemaining === 0) this.bonus2.filters = [this.bwFilter];
+    this.movesText.text = this.scene.gameVisual.logic.moves;
+    Tween.removeTweens(this.pointsText);
+    const tw = Tween.get(this.pointsText).to({ value: this.scene.gameVisual.logic.score }, 300);
+    tw.on('change', () => {
+      this.pointsText.text = Math.floor(this.pointsText.value);
+      this.lineProgress.x = -this.lineProgress.width + this.lineProgress.width * this.pointsText.value / 150;
+      if (this.lineProgress.x > 0) this.lineProgress.x = 0;
+    })
+    this.pointsText.text = this.scene.gameVisual.logic.score;
   }
   onRotate() {
     if (game.width > game.height) {
