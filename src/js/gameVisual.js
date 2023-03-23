@@ -1,6 +1,7 @@
 import {
   Container,
   Sprite,
+  Graphics,
 } from 'pixi.js';
 
 import game from './game';
@@ -37,6 +38,14 @@ class gameVisual extends Container {
     this.boardTexture = new Sprite(game.loadImage('board'));
     this.boardTexture.anchor.set(0.5);
     this.board.addChild(this.boardTexture);
+
+    this.tilesCont = new Container();
+    this.board.addChild(this.tilesCont);
+
+    const mask = new Graphics();
+    this.board.addChild(mask);
+    mask.beginFill(0xffffff).drawRect(-350, -364, 700, 728);
+    this.tilesCont.mask = mask;
 
     this.clickFunction = (evt) => {
       if (this.inMove) return;
@@ -77,7 +86,7 @@ class gameVisual extends Container {
       });
     }
   	this.visualBoard[row][col] = tile;
-  	this.board.addChild(tile);
+  	this.tilesCont.addChild(tile);
   	tile.interactive = true;
   	tile.row = row;
   	tile.col = col;
@@ -91,7 +100,7 @@ class gameVisual extends Container {
   	}
   }
   onTileDestroyed(event) {
-  	this.board.removeChild(this.visualBoard[event.detail.row][event.detail.col]);
+  	this.tilesCont.removeChild(this.visualBoard[event.detail.row][event.detail.col]);
   	this.visualBoard[event.detail.row][event.detail.col] = null;
   }
 
@@ -120,8 +129,15 @@ class gameVisual extends Container {
     tile.col = event.detail.toCol;
   }
   onRotate() {
-    this.board.x = game.width / 2;
-    this.board.y = game.height / 2;
+    if (game.width > game.height) {
+      this.board.x = game.width / 4;
+      this.board.y = game.height / 2;
+      this.board.scale.set(0.9 - 0.22 * game.tablet);
+    } else {
+      this.board.x = game.width / 2;
+      this.board.y = game.height / 2 + 73 - 30 * game.tablet;
+      this.board.scale.set(0.95 - 0.22 * game.tablet + 0.05 * game.wide);
+    }
   }
 }
 

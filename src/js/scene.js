@@ -5,6 +5,7 @@ import {
 
 import game from './game';
 import GameVisual from './gameVisual';
+import UI from './UI';
 
 class Scene extends Container {
   constructor() {
@@ -16,6 +17,10 @@ class Scene extends Container {
 
     this.gameVisual = new GameVisual(9, 9, this);
     this.addChild(this.gameVisual);
+
+    this.UI = new UI(this);
+    this.addChild(this.UI);
+
     this.on("onRotate", () => { this.onRotate() });
   }
   onRotate() {

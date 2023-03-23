@@ -22,7 +22,7 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.(mp3|jpe?g|png|svg)(\?[a-z0-9=&.]+)?$/,
+        test: /\.(ttf|mp3|jpe?g|png|svg)(\?[a-z0-9=&.]+)?$/,
         use: 'base64-inline-loader?limit=1000&name=[name].[ext]',
       },
       {

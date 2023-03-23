@@ -12,4 +12,9 @@ export { default as booster6 } from '../images/booster6.png';
 export { default as booster7 } from '../images/booster7.png';
 export { default as booster8 } from '../images/booster8.png';
 
-export { default as logo } from '../images/logo.png';
+export { default as swap } from '../images/swap.png';
+export { default as topBar } from '../images/topBar.png';
+export { default as bonusButton } from '../images/bonusButton.png';
+export { default as line } from '../images/line.png';
+export { default as lineFilled } from '../images/lineFilled.png';
+export { default as moves } from '../images/moves.png';

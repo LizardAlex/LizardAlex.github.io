@@ -4,3 +4,14 @@ body {
     margin: 0px;
     overflow: hidden;
 }
+
+@font-face {
+  font-family: 'Marvin';
+  src: url('./Marvin.ttf') format('truetype');
+}
+
+.font-preload {
+  font-family: Marvin;
+  position: absolute;
+  left: -100px;
+}
