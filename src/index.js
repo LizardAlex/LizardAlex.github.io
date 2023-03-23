@@ -10,6 +10,8 @@ import './css/style.css';
 const game = new Game(document.getElementById('canvas'));
 Game.images = {};
 window.game = game;
+game.Game = Game;
+Game.game = game;
 Object.keys(images).forEach((key) => {
   const image = new Image();
   image.src = images[key];

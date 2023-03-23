@@ -1,6 +1,7 @@
 
 class gameLogic extends EventTarget {
   constructor(width, height) {
+    super();
     this.width = width;
     this.height = height;
     this.board = this.generateBoard();
@@ -10,7 +11,7 @@ class gameLogic extends EventTarget {
     this.bombBonusActive = false;
     this.bombsRemaining = 3;
     this.bombRadius = 3;
-    this.bonusTileThreshold = 7;
+    this.bonusTileThreshold = 5;
     this.score = 0;
   }
 
@@ -73,9 +74,23 @@ class gameLogic extends EventTarget {
 
     // Calculate score based on combo size
     const comboSize = matches.length;
-    const comboMultiplier = comboSize >= 12 ? 3 : comboSize >= 7 ? 2 : 1;
+    const comboMultiplier = comboSize >= 8 ? 3 : comboSize >= 5 ? 2 : 1;
     const scoreIncrement = comboSize * comboMultiplier;
     this.score += scoreIncrement;
+
+    if (matches.length >= this.bonusTileThreshold) {
+      const bonusType = Math.random() < 0.5 ? 6 : 7;
+      this.board[this.tapRow][this.tapCol] = bonusType;
+    }
+    if (matches.length >= this.bonusTileThreshold * 1.5) {
+      this.board[this.tapRow][this.tapCol] = 8;
+    }
+    if (matches.length >= this.bonusTileThreshold * 2) {
+      this.board[this.tapRow][this.tapCol] = 9;
+    }
+    if (matches.length >= this.bonusTileThreshold) {
+      this.dispatchEvent(new CustomEvent('tileSpawned', { detail: { row: this.tapRow, col: this.tapCol, type: this.board[this.tapRow][this.tapCol], bonus: true } }));
+    }
 
     this.dropBlocks();
     this.generateNewBlocks();
@@ -101,7 +116,7 @@ class gameLogic extends EventTarget {
     for (let row = 0; row < this.height; row++) {
       for (let col = 0; col < this.width; col++) {
         if (this.board[row][col] === null) {
-          this.board[row][col] = Math.floor(Math.random() * 5) + 1;
+          this.board[row][col] = Math.ceil(Math.random() * 5);
           this.dispatchEvent(new CustomEvent('tileSpawned', { detail: { row, col, type: this.board[row][col] } }));
         }
       }
@@ -110,12 +125,18 @@ class gameLogic extends EventTarget {
   removeTilesInRadius(row, col, radius) {
     for (let r = Math.max(0, row - radius); r <= Math.min(this.height - 1, row + radius); r++) {
       for (let c = Math.max(0, col - radius); c <= Math.min(this.width - 1, col + radius); c++) {
-        this.board[r][c] = null;
+        const distance = Math.abs(r - row) + Math.abs(c - col);
+        if (distance < radius) {
+          this.board[r][c] = null;
+          this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col: c } }));
+        }
       }
     }
   }
 
   tap(row, col) {
+    this.tapRow = row;
+    this.tapCol = col;
     if (this.swapBonusActive) {
       if (!this.swapTile1) {
         this.swapTile1 = { row, col };
@@ -141,14 +162,39 @@ class gameLogic extends EventTarget {
       if (matches.length >= 2) {
         this.removeTiles(matches);
 
-        if (matches.length >= this.bonusTileThreshold) {
-          const bonusType = Math.random() < 0.5 ? 5 : 6;
-          this.board[row][col] = bonusType;
+
+      } else if (this.board[row][col] >= 6 && this.board[row][col] <= 9) {
+        this.removeBonusBlocks(row, col);
+        this.removeTiles([]);
+      }  else {
+        return false;
+      }
+    }
+  }
+  removeBonusBlocks(row, col) {
+    const bonusType = this.board[row][col];
+
+    if (bonusType === 7) { // vertical line bonus
+      for (let r = 0; r < this.height; r++) {
+        this.board[r][col] = null;
+        this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col } }));
+      }
+    } else if (bonusType === 6) { // horizontal line bonus
+      for (let c = 0; c < this.width; c++) {
+        this.board[row][c] = null;
+        this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row, col: c } }));
+      }
+    } else if (bonusType === 8) { // radius bonus
+      this.removeTilesInRadius(row, col, 3);
+    } else if (bonusType === 9) { // clear whole board bonus
+      for (let r = 0; r < this.height; r++) {
+        for (let c = 0; c < this.width; c++) {
+          this.board[r][c] = null;
+          this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col: c } }));
         }
       }
     }
   }
-
   activateSwapBonus() {
     if (this.swapsRemaining > 0) {
       this.swapBonusActive = true;

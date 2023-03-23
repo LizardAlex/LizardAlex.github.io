@@ -33,22 +33,23 @@ class gameClass {
       this.canvas.width = 720 * this.ratio;
       this.canvas.height = 720;
     }
-    gameClass.width = width;
-    gameClass.height = height;
+    gameClass.width = this.canvas.width;
+    gameClass.height = this.canvas.height;
 
     gameClass.tablet = Math.abs((Math.min(Math.max(this.canvas.width, this.canvas.height), 1280) - 960) / 320 - 1);
     gameClass.wide = (Math.max(Math.max(this.canvas.width, this.canvas.height), 1280) - 1280) / 278;
 
-    this.app.renderer.resize(width, height);
+    this.app.renderer.resize(this.canvas.width, this.canvas.height);
 
-    if (this.scene) this.scene.onRotate();
+    if (this.scene) this.scene.emit('onRotate');
   }
   init() {
   	this.loaded = true;
   	this.scene = new Scene();
   	this.app.stage.addChild(this.scene);
     gameClass.scene = this.scene;
-  	this.scene.onRotate();
+
+  	this.scene.emit('onRotate');
   }
 }
 
