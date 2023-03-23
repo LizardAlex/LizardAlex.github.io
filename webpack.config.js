@@ -11,11 +11,12 @@ module.exports = {
   // Output main JS
   output: {
     filename: 'main.js',
-    path: path.resolve(__dirname, 'dist'),
-    publicPath: 'dist'
+    path: path.resolve(__dirname, ''),
+    publicPath: ''
   },
   // Server
   devServer: {
+    contentBase: path.resolve(__dirname, 'dist'),
     // Help message !!!
     overlay: true
   },
