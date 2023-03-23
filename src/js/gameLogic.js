@@ -67,16 +67,15 @@ class gameLogic extends EventTarget {
   }
 
   removeTiles(matches) {
-    for (const { row, col } of matches) {
-      this.board[row][col] = null;
-      this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row, col } }));
-    }
-
-    // Calculate score based on combo size
     const comboSize = matches.length;
     const comboMultiplier = comboSize >= 8 ? 3 : comboSize >= 5 ? 2 : 1;
     const scoreIncrement = comboSize * comboMultiplier;
     this.score += scoreIncrement;
+
+    for (const { row, col } of matches) {
+      this.board[row][col] = null;
+      this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row, col } }));
+    }
 
     if (matches.length >= this.bonusTileThreshold) {
       const bonusType = Math.random() < 0.5 ? 6 : 7;
@@ -149,6 +148,7 @@ class gameLogic extends EventTarget {
         this.swapTile1 = null;
         this.swapBonusActive = false;
         this.swapsRemaining--;
+        this.dispatchEvent(new CustomEvent('tileSwapped', { detail: { fromRow: row, fromCol: col, toRow: row2, toCol: col2 } }));
       }
     } else if (this.bombBonusActive) {
       this.removeTilesInRadius(row, col, this.bombRadius);

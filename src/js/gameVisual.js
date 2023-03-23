@@ -11,6 +11,7 @@ import Tween from './tweenjs';
 class gameVisual extends Container {
   constructor(width, height, scene) {
   	super();
+    this.scene = scene;
   	this.widthPieces = width;
   	this.heightPieces = height;
     this.logic = new Logic(width, height);
@@ -28,6 +29,7 @@ class gameVisual extends Container {
     this.logic.addEventListener('tileDestroyed', (e) => this.onTileDestroyed(e));
     this.logic.addEventListener('tileSpawned', (e) => this.onTileSpawned(e));
     this.logic.addEventListener('tileMoved', (e) => this.onTileMoved(e));
+    this.logic.addEventListener('tileSwapped', (e) => this.onTileSwapped(e));
 
     scene.on('onRotate', () => { this.onRotate() });
   }
@@ -51,7 +53,8 @@ class gameVisual extends Container {
       if (this.inMove) return;
       this.inMove = true;
       const tile = evt.target;
-      if (!this.logic.tap(tile.row, tile.col)) this.inMove = false;;
+      if (!this.logic.tap(tile.row, tile.col)) this.inMove = false;
+      if (!this.logic.swapBonusActive) this.scene.UI.moveMade();
     };
 
     for (let row = 0; row < board.length; row++) {
@@ -82,7 +85,9 @@ class gameVisual extends Container {
       this.tilesInMovement += 1;
       Tween.get(tile).to({ y: oldY }, 100 * dist, Tween.Ease.sineInOut).call(() => {
         this.tilesInMovement -= 1;
-        if (this.tilesInMovement === 0) this.inMove = false;
+        if (this.tilesInMovement === 0) {
+          this.inMove = false;
+        }
       });
     }
   	this.visualBoard[row][col] = tile;
@@ -98,6 +103,20 @@ class gameVisual extends Container {
   		x: this.tileWidth * (-this.widthPieces / 2) + this.tileWidth * col + this.tileWidth / 2,
   		y: this.tileHeight * (-this.heightPieces / 2) + this.tileHeight * row + this.tileHeight / 2
   	}
+  }
+  onTileSwapped(event) {
+    this.inMove = true;
+    const tile1 = this.visualBoard[event.detail.fromRow][event.detail.fromCol];
+    const tile2 = this.visualBoard[event.detail.toRow][event.detail.toCol];
+    this.tilesCont.addChild(tile1);
+    this.tilesCont.addChild(tile2);
+    this.visualBoard[event.detail.toRow][event.detail.toCol] = tile1;
+    this.visualBoard[event.detail.fromRow][event.detail.fromCol] = tile2;
+    Tween.get(tile1.position).to(this.setCoordinates(event.detail.toRow, event.detail.toCol), 100);
+    Tween.get(tile2.position).to(this.setCoordinates(event.detail.fromRow, event.detail.fromCol), 100).call(() => {
+      this.inMove = false;
+      this.scene.UI.moveMade();
+    });
   }
   onTileDestroyed(event) {
   	this.tilesCont.removeChild(this.visualBoard[event.detail.row][event.detail.col]);
@@ -123,7 +142,9 @@ class gameVisual extends Container {
   	this.tilesInMovement += 1;
   	Tween.get(tile).to(this.setCoordinates(event.detail.toRow, event.detail.toCol), 100 * dist, Tween.Ease.sineInOut).call(() => {
       this.tilesInMovement -= 1;
-      if (this.tilesInMovement === 0) this.inMove = false;
+      if (this.tilesInMovement === 0) {
+        this.inMove = false;
+      }
   	});
     tile.row = event.detail.toRow;
     tile.col = event.detail.toCol;

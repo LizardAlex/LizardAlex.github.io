@@ -2,6 +2,7 @@ import {
   Container,
   Sprite,
   Text,
+  filters,
 } from 'pixi.js';
 
 import game from './game';
@@ -10,8 +11,9 @@ import GameVisual from './gameVisual';
 class UI extends Container {
   constructor(scene) {
   	super();
+    this.scene = scene;
     this.spawnUIElements();
-    scene.on("onRotate", () => { this.onRotate() });
+    this.scene.on("onRotate", () => { this.onRotate() });
   }
   spawnUIElements() {
     this.movesContainer = new Sprite(game.loadImage("moves"));
@@ -22,6 +24,9 @@ class UI extends Container {
     this.addChild(this.topCounter);
     this.topCounter.anchor.set(0.5, 0);
 
+    this.bwFilter = new filters.ColorMatrixFilter();
+    this.bwFilter.desaturate();
+
     this.bonus1 = new Sprite(game.loadImage("bonusButton"));
     this.bonus1.anchor.set(.5);
     this.addChild(this.bonus1);
@@ -29,6 +34,29 @@ class UI extends Container {
     bonus1Img.anchor.set(.5);
     bonus1Img.y = -30;
     this.bonus1.addChild(bonus1Img);
+    this.bonus1.interactive = true;
+    this.bonus1.buttonMode = true;
+    this.bonus1.on('pointerdown', () => {
+      if (this.bonus1AmountText.text == 0) return;
+      if (!this.bonus1.activated) {
+        this.bonus1.filters = [this.bwFilter];
+        this.bonus1.activated = true;
+        this.scene.gameVisual.logic.activateBombBonus();
+        this.deactivateBonus2();
+      } else {
+        this.deactivateBonus1();
+      }
+    });
+    this.bonus1AmountText = new Text(this.scene.gameVisual.logic.bombsRemaining, {
+      fontFamily: 'Marvin',
+      fontSize: 43,
+      fill: 0xffffff,
+      align: 'center',
+    });
+    this.bonus1AmountText.anchor.set(0.5);
+    this.bonus1AmountText.y = 32;
+    this.bonus1.addChild(this.bonus1AmountText);
+
 
     this.bonus2 = new Sprite(game.loadImage("bonusButton"));
     this.addChild(this.bonus2);
@@ -37,6 +65,47 @@ class UI extends Container {
     bonus2Img.y = -30;
     this.bonus2.addChild(bonus2Img);
     this.bonus2.anchor.set(.5);
+    this.bonus2.interactive = true;
+    this.bonus2.buttonMode = true;
+    this.bonus2.on('pointerdown', () => {
+      if (this.bonus2AmountText.text == 0) return;
+      if (!this.bonus2.activated) {
+        this.bonus2.filters = [this.bwFilter];
+        this.bonus2.activated = true;
+        this.scene.gameVisual.logic.activateSwapBonus();
+        this.deactivateBonus1();
+      } else {
+        this.deactivateBonus2();
+      }
+    });
+    this.bonus2AmountText = new Text(this.scene.gameVisual.logic.swapsRemaining, {
+      fontFamily: 'Marvin',
+      fontSize: 43,
+      fill: 0xffffff,
+      align: 'center',
+    });
+    this.bonus2AmountText.anchor.set(0.5);
+    this.bonus2AmountText.y = 32;
+    this.bonus2.addChild(this.bonus2AmountText);
+  }
+  deactivateBonus1() {
+    this.bonus1.filters = [];
+    this.bonus1.activated = false;
+    this.scene.gameVisual.logic.bombBonusActive = false;
+  }
+  deactivateBonus2() {
+    this.bonus2.filters = [];
+    this.bonus2.activated = false;
+    this.scene.gameVisual.logic.swapBonusActive = false;
+    this.scene.gameVisual.logic.swapTile1 = null;
+  }
+  moveMade() {
+    this.deactivateBonus1();
+    this.deactivateBonus2();
+    this.bonus1AmountText.text = this.scene.gameVisual.logic.bombsRemaining;
+    this.bonus2AmountText.text = this.scene.gameVisual.logic.swapsRemaining;
+    if (this.scene.gameVisual.logic.bombsRemaining === 0) this.bonus1.filters = [this.bwFilter];
+    if (this.scene.gameVisual.logic.swapsRemaining === 0) this.bonus2.filters = [this.bwFilter];
   }
   onRotate() {
     if (game.width > game.height) {
