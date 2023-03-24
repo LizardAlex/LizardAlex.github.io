@@ -180,7 +180,6 @@ class gameLogic extends EventTarget {
         this.removeTiles([]);
         return 'bonusActivated';
       } else {
-        console.log('test Here 777')
         return 'wrongMove';
       }
       
