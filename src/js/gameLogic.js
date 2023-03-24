@@ -13,7 +13,7 @@ class gameLogic extends EventTarget {
     this.bombRadius = 4;
     this.bonusTileThreshold = 5;
     this.score = 0;
-    this.targetGoal = 220;
+    this.targetGoal = 230;
     this.comboCount = 0;
     this.addEventListener('tileDestroyed', () => {
       this.comboCount += 1;
@@ -139,14 +139,14 @@ class gameLogic extends EventTarget {
   }
 
   tap(row, col) {
-    if (this.moves <= 0) return;
+    if (this.moves <= 0) return 'wrongMove';
     this.comboCount = 0;
     this.tapRow = row;
     this.tapCol = col;
     if (this.swapBonusActive) {
       if (!this.swapTile1) {
         this.swapTile1 = { row, col };
-        return false;
+        return 'swap1';
       } else if (this.swapTile1.row != row || this.swapTile1.col != col) {
         const row2 = this.swapTile1.row;
         const col2 = this.swapTile1.col;
@@ -157,29 +157,32 @@ class gameLogic extends EventTarget {
         this.swapBonusActive = false;
         this.swapsRemaining--;
         this.dispatchEvent(new CustomEvent('tileSwapped', { detail: { fromRow: row, fromCol: col, toRow: row2, toCol: col2 } }));
+        return 'swap2';
       } else {
-        return false;
+        return 'wrongMove';
       }
     } else if (this.bombBonusActive) {
       this.removeTilesInRadius(row, col, this.bombRadius);
       this.removeTiles([]);
       this.bombBonusActive = false;
       this.bombsRemaining--;
+      return 'bombBonus';
     } else {
       const visited = new Set();
       const matches = this.findAdjacentMatches(row, col, visited);
-
+      this.moves -= 1;
       if (matches.length >= 2 && this.board[row][col] <= 5) {
         this.removeTiles(matches);
+        return 'correctMove';
       } else if (this.board[row][col] >= 6 && this.board[row][col] <= 9) {
         this.removeBonusBlocks(row, col);
         this.removeTiles([]);
+        return 'bonusActivated';
       } else {
-        return false;
+        return 'wrongMove';
       }
-      this.moves -= 1;
+      
     }
-    return true;
   }
 
   removeBonusBlocks(row, col) {

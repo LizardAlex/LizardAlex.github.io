@@ -33,6 +33,7 @@ class gameVisual extends Container {
     this.visualBoard = [];
     this.explosionsPool = [];
     this.particlesPool = [];
+    this.tilesPool = [];
     this.tilesTypes = ['red', 'yellow', 'green', 'blue', 'purple', 'booster5', 'booster6', 'booster7', 'booster8'];
     this.inMove = false;
     this.tilesInMovement = 0;
@@ -72,16 +73,12 @@ class gameVisual extends Container {
       const clikcedOn = this.logic.board[tile.row][tile.col];
       const bombStatus = this.logic.bombBonusActive;
 
-      if (!this.logic.tap(tile.row, tile.col)) {
-        this.inMove = false;
-      } else {
-        if (clikcedOn >= 1 && clikcedOn <= 5 && !this.logic.swapBonusActive && !bombStatus) game.play('match3_1');
-        if (clikcedOn === 6 || clikcedOn === 7) game.play('firework');
-      }
-      if (!this.logic.swapBonusActive) {
+      const status = this.logic.tap(tile.row, tile.col);
 
-        this.scene.UI.moveMade();
-      }
+      if (status === 'wrongMove' || status === 'swap1') this.inMove = false;
+      if (status === 'correctMove' || status === 'swap2') game.play('match3_1');
+      if (status !== 'swap1') this.scene.UI.moveMade();
+      if (clikcedOn === 6 || clikcedOn === 7) game.play('firework');
     };
 
     for (let row = 0; row < board.length; row++) {
@@ -101,8 +98,15 @@ class gameVisual extends Container {
     return emptySpaces;
   }
   spawnTile(row, col, type, fresh) {
-  	const tile = new Sprite(game.loadImage(this.tilesTypes[type - 1]));
+  	let tile;
+    if (this.tilesPool.length === 0) tile = new Sprite(game.loadImage(this.tilesTypes[type - 1]));
+    else tile = this.tilesPool.pop();
+    Tween.removeTweens(tile);
+    Tween.removeTweens(tile.scale);
+    tile.rotation = 0;
   	tile.anchor.set(0.5);
+    tile.scale.set(1);
+    tile.texture = game.loadImage(this.tilesTypes[type - 1]);
   	tile.position = this.setCoordinates(row, col);
     if (fresh) {
       const emptySpaces = this.getEmptySpacesInColumn(col);
@@ -210,6 +214,7 @@ class gameVisual extends Container {
         if (type >= 1 && type <= 5) this.spawnParticles(tile.position, type);
       }).to({ x: 0, y: 0 }, 100, Tween.Ease.sineInOut).call(() => {
         this.tilesCont.removeChild(tile);
+        this.tilesPool.push(tile);
       });
     }
   	this.visualBoard[event.detail.row][event.detail.col] = null;
