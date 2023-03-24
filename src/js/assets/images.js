@@ -26,3 +26,6 @@ export { default as p2 } from '../../images/p2.png';
 export { default as p3 } from '../../images/p3.png';
 export { default as p4 } from '../../images/p4.png';
 export { default as p5 } from '../../images/p5.png';
+
+export { default as button } from '../../images/button.png';
+export { default as pointer } from '../../images/pointer.png';

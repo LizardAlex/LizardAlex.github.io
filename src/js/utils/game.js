@@ -11,7 +11,7 @@ class gameClass {
   constructor(canvas) {
   	this.canvas = canvas;
     this.app = new Application({
-      view: canvas,
+      view: this.canvas,
     });
     this.proceedRotation();
   }

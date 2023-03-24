@@ -8,12 +8,20 @@ import game from './utils/game';
 import GameVisual from './gameVisual';
 import UI from './UI';
 import Tween from './utils/tweenjs';
+import EndCard from './endCard';
 
 class Scene extends Container {
   constructor() {
   	super();
     
     game.play('music', 0.7, true);
+    this.initGame();
+
+    this.initTrippyShader();
+
+    this.on("onRotate", () => { this.onRotate() });
+  }
+  initGame() {
     this.background = new Sprite(game.loadImage("background"));
     this.background.anchor.set(0.5);
     this.addChild(this.background);
@@ -24,9 +32,55 @@ class Scene extends Container {
     this.UI = new UI(this);
     this.addChild(this.UI);
 
-    this.initTrippyShader();
+    this.confettiLeft = new Container();
+    this.confettiRight = new Container();
+    this.addChild(this.confettiLeft);
+    this.addChild(this.confettiRight);
+  }
+  buildConfetti(side, angle) {
+    const confettiContainer = game.scene[`confetti${side}`];
+    const confettiAmount = 75;
+    for (let i = 0; i < confettiAmount; i += 1) {
+      const confetti = new Sprite(game.loadImage(`p${Math.ceil(Math.random() * 5)}`));
+      confetti.anchor.set(0.5);
+      confetti.angle = Math.random() * 360;
+      confettiContainer.addChild(confetti);
+      const randomRotateTime = 250 + Math.random() * 250;
+      Tween.get(confetti.scale, { loop: true }).to({ x: 0.1 }, randomRotateTime).to({ x: 1 }, randomRotateTime);
+      Tween.get(confetti, { loop: true }).to({ angle: 360 + confetti.angle });
+      Tween.get(confetti)
+        .wait(i * 5)
+        .call(() => {
+          const direction = side === 'Left' ? 1 : -1;
+          Tween.get(confetti)
+            .to({
+              x: Math.random() * (game.width / 2) * direction,
+              y: -(game.height / 2) - (Math.random() * (game.height / 2)),
+            }, 1250, Tween.Ease.cubicOut);
+        })
+        .wait(900)
+        .to({ alpha: 0 }, 150);
+    }
+  }
+  buildEndCard(win) {
+    if (this.finished) return;
+    this.finished = true;
 
-    this.on("onRotate", () => { this.onRotate() });
+    if (win) {
+      this.buildConfetti('Left', 25);
+      this.buildConfetti('Right', -25);
+      Tween.get(this).wait(500).call(() => {
+        this.buildConfetti('Left', 25);
+        this.buildConfetti('Right', -25);
+      });
+      game.play('banner_game_won');
+    } else {
+      game.play('banner_lose');
+    }
+    this.endCard = new EndCard(win, this);
+    this.addChild(this.endCard);
+    this.addChild(this.confettiLeft);
+    this.addChild(this.confettiRight);
   }
   initTrippyShader() {
     const fragShader = `
@@ -91,6 +145,10 @@ class Scene extends Container {
     this.background.x = game.width / 2;
     this.background.y = game.height / 2;
     this.background.scale.set(1.04 + 0.3 * game.wide)
+
+    this.confettiLeft.y = game.height + 50;
+    this.confettiRight.x = game.width;
+    this.confettiRight.y = game.height + 50;
   }
 }
 

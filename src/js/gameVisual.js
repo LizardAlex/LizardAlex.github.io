@@ -18,11 +18,32 @@ class gameVisual extends Container {
     Tween.MotionGuidePlugin.install();
     this.initProperties(width, height, scene);
     this.initBoard(this.logic.board);
+    this.initTutorialMove(width, height);
+
 
     this.attachLogicListeners();
     scene.on('onRotate', () => this.onRotate());
   }
 
+  initTutorialMove(width, height) {
+    const possibleCombos = [];
+    for (let row = 0; row < height; row++) {
+      for (let col = 0; col < width; col++) {
+        const visited = new Set();
+        const matches = this.logic.findAdjacentMatches(row, col, visited);
+        possibleCombos.push(matches);
+      }
+    }
+    possibleCombos.sort((a, b) => b.length - a.length);
+    this.spawnHand(possibleCombos[0][0]);
+  }
+  spawnHand(position) {
+    this.hand = new Sprite(game.loadImage('pointer'));
+    this.board.addChild(this.hand);
+    Tween.get(this.hand.scale, { loop: true }).to({ x: 0.9, y: 0.9 }, 250, Tween.Ease.sineInOut).to({ x: 1, y: 1 }, 250, Tween.Ease.sineInOut);
+
+    this.hand.position = this.setCoordinates(position.row, position.col);
+  }
   initProperties(width, height, scene) {
     this.scene = scene;
     this.widthPieces = width;
@@ -67,6 +88,9 @@ class gameVisual extends Container {
 
     this.clickFunction = (evt) => {
       if (this.inMove) return;
+      Tween.get(this.hand).to({ alpha: 0 }, 300).call(() => {
+        this.board.removeChild(this.hand);
+      });
       this.dropDelay = 100;
       this.inMove = true;
       const tile = evt.target;
@@ -74,11 +98,14 @@ class gameVisual extends Container {
       const bombStatus = this.logic.bombBonusActive;
 
       const status = this.logic.tap(tile.row, tile.col);
-
+      if (status === 'swap1') {
+        Tween.get(tile.scale).to({ x: 1.2, y: 1.2 }, 50).to({ x: 1, y: 1 }, 50);
+      }
       if (status === 'wrongMove' || status === 'swap1') this.inMove = false;
       if (status === 'correctMove' || status === 'swap2') game.play('match3_1');
       if (status !== 'swap1') this.scene.UI.moveMade();
       if (clikcedOn === 6 || clikcedOn === 7) game.play('firework');
+      if (status === 'wrongMove') Tween.get(tile.pivot, { loop: 1 }).to({ x: -4 }, 25).to({ x: 4 }, 50).to({ x: 0 }, 0);
     };
 
     for (let row = 0; row < board.length; row++) {

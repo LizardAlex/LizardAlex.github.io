@@ -139,7 +139,8 @@ class gameLogic extends EventTarget {
   }
 
   tap(row, col) {
-    if (this.moves <= 0) return 'wrongMove';
+    if (this.score >= this.targetGoal) return 'gameFinished';
+    if (this.moves <= 0) return 'gameFinished';
     this.comboCount = 0;
     this.tapRow = row;
     this.tapCol = col;
@@ -170,9 +171,9 @@ class gameLogic extends EventTarget {
     } else {
       const visited = new Set();
       const matches = this.findAdjacentMatches(row, col, visited);
-      this.moves -= 1;
       if (matches.length >= 2 && this.board[row][col] <= 5) {
         this.removeTiles(matches);
+        this.moves -= 1;
         return 'correctMove';
       } else if (this.board[row][col] >= 6 && this.board[row][col] <= 9) {
         this.removeBonusBlocks(row, col);

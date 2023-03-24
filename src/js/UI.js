@@ -30,7 +30,8 @@ class UI extends Container {
     this.movesContainer = this.createContainer('moves', 0.5, 0.5);
     this.createText('ОЧКИ:', 32, 65, this.movesContainer);
     this.movesText = this.createText(this.scene.gameVisual.logic.moves, 112, -95, this.movesContainer);
-    this.pointsText = this.createText(0, 82, 115, this.movesContainer, true);
+    this.pointsText = this.createText(0, 82, 115, this.movesContainer);
+    this.pointsText.value = 0;
   }
 
   spawnTopBar() {
@@ -79,7 +80,7 @@ class UI extends Container {
     return sprite;
   }
 
-  createText(text, fontSize, y, parent, value = false) {
+  createText(text, fontSize, y, parent) {
     const textObj = new Text(text, {
       fontFamily: 'Marvin',
       fontSize: fontSize,
@@ -89,9 +90,6 @@ class UI extends Container {
     textObj.anchor.set(0.5);
     textObj.y = y;
     parent.addChild(textObj);
-    if (value) {
-      textObj.value = 0;
-    }
     return textObj;
   }
 
@@ -101,13 +99,16 @@ class UI extends Container {
     button.interactive = true;
     button.buttonMode = true;
     button.on('pointerdown', () => {
+      if (button.notAvailable) return;
+      if (this.scene.gameVisual.logic.score >= this.scene.gameVisual.logic.targetGoal) return;
       if (this.scene.gameVisual.logic.moves === 0) return;
       if (!button.activated) {
         button.filters = [this.bwFilter];
         button.activated = true;
         onActivate();
       } else {
-        this.deactivateButton(button);
+        if (imageName === 'booster7') this.deactivateBonus1();
+        if (imageName === 'swap') this.deactivateBonus2();
       }
     });
     return button;
@@ -133,13 +134,24 @@ class UI extends Container {
     this.deactivateBonus1();
     this.deactivateBonus2();
     this.updateTextsAndProgress();
+    this.checkWin();
+  }
+  checkWin() {
+    if (this.scene.gameVisual.logic.score >= this.scene.gameVisual.logic.targetGoal) this.scene.buildEndCard(true);
+    if (this.scene.gameVisual.logic.moves === 0) this.scene.buildEndCard(false);
   }
 
   updateTextsAndProgress() {
     this.bonus1AmountText.text = this.scene.gameVisual.logic.bombsRemaining;
     this.bonus2AmountText.text = this.scene.gameVisual.logic.swapsRemaining;
-    if (this.scene.gameVisual.logic.bombsRemaining === 0) this.bonus1.filters = [this.bwFilter];
-    if (this.scene.gameVisual.logic.swapsRemaining === 0) this.bonus2.filters = [this.bwFilter];
+    if (this.scene.gameVisual.logic.bombsRemaining === 0) {
+      this.bonus1.filters = [this.bwFilter];
+      this.bonus1.notAvailable = true;
+    }
+    if (this.scene.gameVisual.logic.swapsRemaining === 0) {
+      this.bonus2.filters = [this.bwFilter];
+      this.bonus2.notAvailable = true;
+    }
     this.movesText.text = this.scene.gameVisual.logic.moves;
 
     Tween.removeTweens(this.pointsText);
