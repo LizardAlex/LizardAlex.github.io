@@ -1,0 +1,1 @@
+export { default as music } from '../../sounds/gameplay_music.mp3';

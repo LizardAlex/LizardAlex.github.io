@@ -4,35 +4,42 @@ import {
   Graphics,
 } from 'pixi.js';
 
-import game from './game';
+import game from './utils/game';
 import Logic from './gameLogic';
-import Tween from './tweenjs';
+import Tween from './utils/tweenjs';
 
 class gameVisual extends Container {
   constructor(width, height, scene) {
-  	super();
+    super();
+    this.setup(width, height, scene);
+  }
+
+  setup(width, height, scene) {
     Tween.MotionGuidePlugin.install();
+    this.initProperties(width, height, scene);
+    this.initBoard(this.logic.board);
+
+    this.attachLogicListeners();
+    scene.on('onRotate', () => this.onRotate());
+  }
+
+  initProperties(width, height, scene) {
     this.scene = scene;
-  	this.widthPieces = width;
-  	this.heightPieces = height;
+    this.widthPieces = width;
+    this.heightPieces = height;
     this.logic = new Logic(width, height);
     this.tileWidth = 71;
     this.tileHeight = 80;
     this.visualBoard = [];
-
     this.tilesTypes = ['red', 'yellow', 'green', 'blue', 'purple', 'booster5', 'booster6', 'booster7', 'booster8'];
-
     this.inMove = false;
     this.tilesInMovement = 0;
-
-    this.initBoard(this.logic.board);
-
+  }
+  attachLogicListeners() {
     this.logic.addEventListener('tileDestroyed', (e) => this.onTileDestroyed(e));
     this.logic.addEventListener('tileSpawned', (e) => this.onTileSpawned(e));
     this.logic.addEventListener('tileMoved', (e) => this.onTileMoved(e));
     this.logic.addEventListener('tileSwapped', (e) => this.onTileSwapped(e));
-
-    scene.on('onRotate', () => { this.onRotate() });
   }
   initBoard(board) {
     this.board = new Container();
@@ -54,7 +61,9 @@ class gameVisual extends Container {
       if (this.inMove) return;
       this.inMove = true;
       const tile = evt.target;
-      if (!this.logic.tap(tile.row, tile.col)) this.inMove = false;
+      if (!this.logic.tap(tile.row, tile.col)) {
+        this.inMove = false;
+      }
       if (!this.logic.swapBonusActive) this.scene.UI.moveMade();
     };
 
@@ -138,7 +147,9 @@ class gameVisual extends Container {
         (tile2.y + endC2.y) / 2 - this.heightPieces * 15 * xOff,
         endC2.x,
         endC2.y
-      ] }}, 100);
+      ] }}, 100).call(() => {
+        this.inMove = false;
+      });
 
   }
   onTileDestroyed(event) {

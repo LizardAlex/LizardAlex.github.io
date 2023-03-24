@@ -1,4 +1,3 @@
-
 class gameLogic extends EventTarget {
   constructor(width, height) {
     super();
@@ -20,7 +19,7 @@ class gameLogic extends EventTarget {
       this.comboCount += 1;
       const scoreIncrement = this.comboCount >= 10 ? 0 :  this.comboCount >= 6 ? 3 : this.comboCount >= 3 ? 2 : 1;
       this.score += scoreIncrement;
-    })
+    });
   }
 
   generateBoard() {
@@ -124,6 +123,7 @@ class gameLogic extends EventTarget {
       }
     }
   }
+
   removeTilesInRadius(row, col, radius) {
     for (let r = Math.max(0, row - radius); r <= Math.min(this.height - 1, row + radius); r++) {
       for (let c = Math.max(0, col - radius); c <= Math.min(this.width - 1, col + radius); c++) {
@@ -145,7 +145,8 @@ class gameLogic extends EventTarget {
     if (this.swapBonusActive) {
       if (!this.swapTile1) {
         this.swapTile1 = { row, col };
-      } else {
+        return false;
+      } else if (this.swapTile1.row != row || this.swapTile1.col != col) {
         const row2 = this.swapTile1.row;
         const col2 = this.swapTile1.col;
         const temp = this.board[row][col];
@@ -155,6 +156,8 @@ class gameLogic extends EventTarget {
         this.swapBonusActive = false;
         this.swapsRemaining--;
         this.dispatchEvent(new CustomEvent('tileSwapped', { detail: { fromRow: row, fromCol: col, toRow: row2, toCol: col2 } }));
+      } else {
+        return false;
       }
     } else if (this.bombBonusActive) {
       this.removeTilesInRadius(row, col, this.bombRadius);
@@ -167,17 +170,17 @@ class gameLogic extends EventTarget {
 
       if (matches.length >= 2 && this.board[row][col] <= 5) {
         this.removeTiles(matches);
-
-
       } else if (this.board[row][col] >= 6 && this.board[row][col] <= 9) {
         this.removeBonusBlocks(row, col);
         this.removeTiles([]);
-      }  else {
+      } else {
         return false;
       }
       this.moves -= 1;
     }
+    return true;
   }
+
   removeBonusBlocks(row, col) {
     const bonusType = this.board[row][col];
     this.board[row][col] = null;
@@ -205,6 +208,7 @@ class gameLogic extends EventTarget {
       }
     }
   }
+
   activateSwapBonus() {
     if (this.swapsRemaining > 0) {
       this.swapBonusActive = true;

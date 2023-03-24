@@ -4,15 +4,16 @@ import {
   Filter,
 } from 'pixi.js';
 
-import game from './game';
+import game from './utils/game';
 import GameVisual from './gameVisual';
 import UI from './UI';
-import Tween from './tweenjs';
+import Tween from './utils/tweenjs';
 
 class Scene extends Container {
   constructor() {
   	super();
-
+    
+   // game.play('music', 0.7, true);
     this.background = new Sprite(game.loadImage("background"));
     this.background.anchor.set(0.5);
     this.addChild(this.background);
