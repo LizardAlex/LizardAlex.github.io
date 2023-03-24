@@ -6,14 +6,14 @@ class gameLogic extends EventTarget {
     this.board = this.generateBoard();
     this.swapBonusActive = false;
     this.swapsRemaining = 3;
-    this.moves = 15;
+    this.moves = 25;
     this.swapTile1 = null;
     this.bombBonusActive = false;
     this.bombsRemaining = 3;
     this.bombRadius = 4;
     this.bonusTileThreshold = 5;
     this.score = 0;
-    this.targetGoal = 150;
+    this.targetGoal = 220;
     this.comboCount = 0;
     this.addEventListener('tileDestroyed', () => {
       this.comboCount += 1;
@@ -75,8 +75,8 @@ class gameLogic extends EventTarget {
 
   removeTiles(matches) {
     for (const { row, col } of matches) {
+      this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row, col, type: this.board[row][col] } }));
       this.board[row][col] = null;
-      this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row, col } }));
     }
 
     if (matches.length >= this.bonusTileThreshold) {
@@ -125,13 +125,14 @@ class gameLogic extends EventTarget {
   }
 
   removeTilesInRadius(row, col, radius) {
+    this.dispatchEvent(new CustomEvent('bonusActivated', { detail: { row, col, type: 10 } }));
     for (let r = Math.max(0, row - radius); r <= Math.min(this.height - 1, row + radius); r++) {
       for (let c = Math.max(0, col - radius); c <= Math.min(this.width - 1, col + radius); c++) {
         const distance = Math.abs(r - row) + Math.abs(c - col);
         if (distance < radius) {
           if (this.board[r][c] >= 6 && this.board[r][c] <= 9) this.removeBonusBlocks(r, c);
+          this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col: c, type: this.board[r][c] } }));
           this.board[r][c] = null;
-          this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col: c } }));
         }
       }
     }
@@ -183,27 +184,28 @@ class gameLogic extends EventTarget {
 
   removeBonusBlocks(row, col) {
     const bonusType = this.board[row][col];
+    this.dispatchEvent(new CustomEvent('bonusActivated', { detail: { row, col, type: bonusType } }));
     this.board[row][col] = null;
 
     if (bonusType === 6) { // horizontal line bonus
       for (let c = 0; c < this.width; c++) {
         if (this.board[row][c] >= 6 && this.board[row][c] <= 9) this.removeBonusBlocks(row, c);
+        this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row, col: c, type: this.board[row][c], delay: Math.abs(col - c) } }));
         this.board[row][c] = null;
-        this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row, col: c } }));
       }
     } else if (bonusType === 7) { // vertical line bonus
       for (let r = 0; r < this.height; r++) {
         if (this.board[r][col] >= 6 && this.board[r][col] <= 9) this.removeBonusBlocks(r, col);
+        this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col, type: this.board[r][col], delay: Math.abs(row - r) } }));
         this.board[r][col] = null;
-        this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col } }));
       }
     } else if (bonusType === 8) { // radius bonus
       this.removeTilesInRadius(row, col, this.bombRadius);
     } else if (bonusType === 9) { // clear whole board bonus
       for (let r = 0; r < this.height; r++) {
         for (let c = 0; c < this.width; c++) {
+          this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col: c, type: this.board[r][c] } }));
           this.board[r][c] = null;
-          this.dispatchEvent(new CustomEvent('tileDestroyed', { detail: { row: r, col: c } }));
         }
       }
     }

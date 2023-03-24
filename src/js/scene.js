@@ -13,7 +13,7 @@ class Scene extends Container {
   constructor() {
   	super();
     
-   // game.play('music', 0.7, true);
+    game.play('music', 0.7, true);
     this.background = new Sprite(game.loadImage("background"));
     this.background.anchor.set(0.5);
     this.addChild(this.background);
@@ -79,10 +79,18 @@ class Scene extends Container {
     const shader = new Filter(undefined, fragShader, uniforms);
     this.filters = [shader];
   }
+  shake(amplitude) {
+    Tween.get(this.pivot)
+      .to({ x: -amplitude }, 50)
+      .to({ x: amplitude }, 100)
+      .to({ x: -amplitude / 2 }, 30)
+      .to({ x: amplitude / 2 }, 60)
+      .to({ x: 0 }, 30);
+  }
   onRotate() {
     this.background.x = game.width / 2;
     this.background.y = game.height / 2;
-    this.background.scale.set(1 + 0.3 * game.wide)
+    this.background.scale.set(1.04 + 0.3 * game.wide)
   }
 }
 

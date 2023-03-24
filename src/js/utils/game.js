@@ -63,8 +63,8 @@ class gameClass {
   static loadImage(key) {
     return gameClass.images[key];
   }
-  static createSpriteSheet(name, path, horizontalFrames, verticalFrames, animationSpeed, loop = true, customFrameOrder = null) {
-    const spriteSheet = game.loadImage(name);
+  static createSpriteSheet(name, horizontalFrames, verticalFrames, animationSpeed, loop = true, customFrameOrder = null) {
+    const spriteSheet = this.loadImage(name);
     const textureArray = [];
     const amountOfFrames = horizontalFrames * verticalFrames;
     const frameWidth = spriteSheet.width / horizontalFrames;
@@ -97,9 +97,6 @@ class gameClass {
     object.animationSpeed = animationSpeed;
     object.loop = loop;
     object.anchor.set(0.5);
-    if (path) {
-      addAnchoring(object, path);
-    }
     object.play();
     return object;
   }

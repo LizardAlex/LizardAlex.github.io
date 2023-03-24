@@ -18,3 +18,11 @@ export { default as bonusButton } from '../../images/bonusButton.png';
 export { default as line } from '../../images/line.png';
 export { default as lineFilled } from '../../images/lineFilled.png';
 export { default as moves } from '../../images/moves.png';
+
+export { default as explosion_spritesheet } from '../../images/explosion_spritesheet.png';
+
+export { default as p1 } from '../../images/p1.png';
+export { default as p2 } from '../../images/p2.png';
+export { default as p3 } from '../../images/p3.png';
+export { default as p4 } from '../../images/p4.png';
+export { default as p5 } from '../../images/p5.png';

@@ -146,7 +146,7 @@ class UI extends Container {
     const tw = Tween.get(this.pointsText).to({ value: this.scene.gameVisual.logic.score }, 300);
     tw.on('change', () => {
       this.pointsText.text = Math.floor(this.pointsText.value);
-      this.lineProgress.x = -this.lineProgress.width + this.lineProgress.width * this.pointsText.value / 150;
+      this.lineProgress.x = -this.lineProgress.width + this.lineProgress.width * this.pointsText.value / this.scene.gameVisual.logic.targetGoal;
       if (this.lineProgress.x > 0) this.lineProgress.x = 0;
     });
     this.pointsText.text = this.scene.gameVisual.logic.score;

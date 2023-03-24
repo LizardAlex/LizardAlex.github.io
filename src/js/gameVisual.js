@@ -31,15 +31,19 @@ class gameVisual extends Container {
     this.tileWidth = 71;
     this.tileHeight = 80;
     this.visualBoard = [];
+    this.explosionsPool = [];
+    this.particlesPool = [];
     this.tilesTypes = ['red', 'yellow', 'green', 'blue', 'purple', 'booster5', 'booster6', 'booster7', 'booster8'];
     this.inMove = false;
     this.tilesInMovement = 0;
+    this.dropDelay = 0;
   }
   attachLogicListeners() {
     this.logic.addEventListener('tileDestroyed', (e) => this.onTileDestroyed(e));
     this.logic.addEventListener('tileSpawned', (e) => this.onTileSpawned(e));
     this.logic.addEventListener('tileMoved', (e) => this.onTileMoved(e));
     this.logic.addEventListener('tileSwapped', (e) => this.onTileSwapped(e));
+    this.logic.addEventListener('bonusActivated', (e) => this.onBonusActivated(e));
   }
   initBoard(board) {
     this.board = new Container();
@@ -52,6 +56,9 @@ class gameVisual extends Container {
     this.tilesCont = new Container();
     this.board.addChild(this.tilesCont);
 
+    this.particlesLayer = new Container();
+    this.board.addChild(this.particlesLayer);
+
     const mask = new Graphics();
     this.board.addChild(mask);
     mask.beginFill(0xffffff).drawRect(-350, -364, 700, 728);
@@ -59,12 +66,22 @@ class gameVisual extends Container {
 
     this.clickFunction = (evt) => {
       if (this.inMove) return;
+      this.dropDelay = 100;
       this.inMove = true;
       const tile = evt.target;
+      const clikcedOn = this.logic.board[tile.row][tile.col];
+      const bombStatus = this.logic.bombBonusActive;
+
       if (!this.logic.tap(tile.row, tile.col)) {
         this.inMove = false;
+      } else {
+        if (clikcedOn >= 1 && clikcedOn <= 5 && !this.logic.swapBonusActive && !bombStatus) game.play('match3_1');
+        if (clikcedOn === 6 || clikcedOn === 7) game.play('firework');
       }
-      if (!this.logic.swapBonusActive) this.scene.UI.moveMade();
+      if (!this.logic.swapBonusActive) {
+
+        this.scene.UI.moveMade();
+      }
     };
 
     for (let row = 0; row < board.length; row++) {
@@ -93,7 +110,8 @@ class gameVisual extends Container {
       tile.y = this.tileHeight * (-this.heightPieces / 2) - this.tileHeight * emptySpaces + this.tileHeight / 2;
       const dist = (oldY - tile.y) / this.tileHeight;
       this.tilesInMovement += 1;
-      Tween.get(tile).to({ y: oldY }, 100 * dist, Tween.Ease.sineInOut).call(() => {
+      Tween.get(tile).wait(this.dropDelay).to({ y: oldY }, 100 * dist, Tween.Ease.sineInOut)
+      .to({ y: oldY - 10 }, 25, Tween.Ease.sineInOut).to({ y: oldY }, 25, Tween.Ease.sineInOut).call(() => {
         this.tilesInMovement -= 1;
         if (this.tilesInMovement === 0) {
           this.inMove = false;
@@ -113,6 +131,35 @@ class gameVisual extends Container {
   		x: this.tileWidth * (-this.widthPieces / 2) + this.tileWidth * col + this.tileWidth / 2,
   		y: this.tileHeight * (-this.heightPieces / 2) + this.tileHeight * row + this.tileHeight / 2
   	}
+  }
+  onBonusActivated(event) {
+    if (event.detail.type === 10) {
+      this.scene.shake(5);
+      this.dropExplosion(this.setCoordinates(event.detail.row, event.detail.col));
+    }
+    if (event.detail.type === 9) {
+      this.scene.shake(10);
+      Tween.get(this, { loop: 5}).call(() => {
+        this.dropExplosion({
+          x: (Math.random() * this.boardTexture.width - this.boardTexture.width / 2) * 0.8,
+          y: (Math.random() * this.boardTexture.height - this.boardTexture.height / 2) * 0.8
+        });
+      }).wait(70);
+    }
+  }
+  dropExplosion(coords) {
+    let explosion;
+    if (this.explosionsPool.length === 0) explosion = game.createSpriteSheet('explosion_spritesheet', 5, 5, 0.5, false);
+    else explosion = this.explosionsPool.pop();
+    explosion.gotoAndPlay(0);
+    explosion.scale.set(2.2);
+    explosion.position = coords;
+    this.particlesLayer.addChild(explosion);
+    explosion.onComplete = () => {
+      this.explosionsPool.push(explosion);
+      this.particlesLayer.removeChild(explosion);
+    };
+    game.play('explosion');
   }
   onTileSwapped(event) {
     this.inMove = true;
@@ -155,13 +202,36 @@ class gameVisual extends Container {
   onTileDestroyed(event) {
     const tile = this.visualBoard[event.detail.row][event.detail.col];
     if (tile) {
-      Tween.get(tile.scale).to({ x: 0, y: 0 }, 100, Tween.Ease.sineInOut).call(() => {
+      const type = event.detail.type;
+      let time = 0;
+      if (event.detail.delay) time = 30 * event.detail.delay;
+      if (time !== 0) this.dropDelay = 250;
+      Tween.get(tile.scale).wait(time).call(() => {
+        if (type >= 1 && type <= 5) this.spawnParticles(tile.position, type);
+      }).to({ x: 0, y: 0 }, 100, Tween.Ease.sineInOut).call(() => {
         this.tilesCont.removeChild(tile);
       });
     }
   	this.visualBoard[event.detail.row][event.detail.col] = null;
   }
-
+  spawnParticles(position, type) {
+    for (let i = 0; i < 15; i += 1) {
+      let part;
+      if (this.particlesPool.length === 0) part = new Sprite(game.loadImage(`p${type}`));
+      else part = this.particlesPool.pop();
+      part.texture = game.loadImage(`p${type}`);
+      this.particlesLayer.addChild(part);
+      part.position = position;
+      part.scale.set(0.5);
+      part.alpha = 1;
+      part.rotation = Math.random() * Math.PI * 2;
+      Tween.get(part).wait(100).to({ alpha: 0 }, 150);
+      Tween.get(part).to({ x: part.x + Math.random() * 200 - 100, y: part.y + Math.random() * 200 - 100 }, 250).call(() => {
+        this.particlesLayer.removeChild(part);
+        this.particlesPool.push(part);
+      });
+    }
+  }
   onTileSpawned(event) {
   	const item = this.spawnTile(event.detail.row, event.detail.col, event.detail.type, !event.detail.bonus);
     if (event.detail.type > 5) {
@@ -179,7 +249,9 @@ class gameVisual extends Container {
   	this.visualBoard[event.detail.toRow][event.detail.toCol] = tile;
   	const dist = event.detail.toRow - event.detail.fromRow;
   	this.tilesInMovement += 1;
-  	Tween.get(tile).to(this.setCoordinates(event.detail.toRow, event.detail.toCol), 100 * dist, Tween.Ease.sineInOut).call(() => {
+    const endCoordinates = this.setCoordinates(event.detail.toRow, event.detail.toCol);
+  	Tween.get(tile).wait(this.dropDelay).to(endCoordinates, 100 * dist, Tween.Ease.sineInOut)
+    .to({ y: endCoordinates.y - 10 }, 25, Tween.Ease.sineInOut).to({ y: endCoordinates.y }, 25, Tween.Ease.sineInOut).call(() => {
       this.tilesInMovement -= 1;
       if (this.tilesInMovement === 0) {
         this.inMove = false;
