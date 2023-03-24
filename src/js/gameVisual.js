@@ -126,7 +126,11 @@ class gameVisual extends Container {
   }
   spawnTile(row, col, type, fresh) {
   	let tile;
-    if (this.tilesPool.length === 0) tile = new Sprite(game.loadImage(this.tilesTypes[type - 1]));
+    if (this.tilesPool.length === 0) {
+      tile = new Sprite(game.loadImage(this.tilesTypes[type - 1]));
+      tile.interactive = true;
+      tile.on('pointerdown', this.clickFunction);
+    }
     else tile = this.tilesPool.pop();
     Tween.removeTweens(tile);
     Tween.removeTweens(tile.scale);
@@ -151,10 +155,9 @@ class gameVisual extends Container {
     }
   	this.visualBoard[row][col] = tile;
   	this.tilesCont.addChild(tile);
-  	tile.interactive = true;
   	tile.row = row;
   	tile.col = col;
-    tile.on('pointerdown', this.clickFunction);
+    
     return tile;
   }
   setCoordinates(row, col) {

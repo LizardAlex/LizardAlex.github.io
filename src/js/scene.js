@@ -13,12 +13,9 @@ import EndCard from './endCard';
 class Scene extends Container {
   constructor() {
   	super();
-    
     game.play('music', 0.7, true);
     this.initGame();
-
     this.initTrippyShader();
-
     this.on("onRotate", () => { this.onRotate() });
   }
   initGame() {
